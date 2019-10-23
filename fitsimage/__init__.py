@@ -1,1 +1,2 @@
-pass
+from .fitsimage import FITSImage
+
