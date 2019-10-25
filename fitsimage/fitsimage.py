@@ -74,16 +74,14 @@ class FITSImage(WCS):
         hdr['NAXIS2']=img.shape[0]
         hdr['CRPIX1']-=x0
         hdr['CRPIX2']-=y0
-
         hdr['LTV1']=setLTV('LTV1',x0)
         hdr['LTV2']=setLTV('LTV2',y0)
         
-
-        #hdr['LTV2']=setLTV('LTV2',y0)
-
-        #hdr['LTV1']=-x0
-        #hdr['LTV2']-=y0
-
+        # add new keywords
+        hdr['XMIN']=(x0,'lower x-bound')
+        hdr['XMAX']=(x1,'upper x-bound')
+        hdr['YMIN']=(y0,'lower y-bound')
+        hdr['YMAX']=(y1,'upper y-bound')
         
         # update the history
         history='Extracted from region (x,y)=[{}:{},{}:{}]'.format(x0,x1,y0,y1)
@@ -128,6 +126,7 @@ class FITSImage(WCS):
         if 'CDELT2' in hdr:
             hdr['CDELT2']=hdr['CDELT2']/yratio
 
+    
         
         print("Need to sort out LTVs")
         #if 'LTV1' in hdr:
