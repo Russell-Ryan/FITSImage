@@ -198,7 +198,17 @@ class FITSImage(WCS):
             self.header[k]=v
         elif isinstance(k,tuple):
             self.image[k[0],k[1]]=v
+        elif isinstance(k,np.ndarray):
+            try:
+                print(k.dtype)
+                self.image[k]=v
+            except:
+                print('keyword is invalid numpy datatype')
+        else:
+            print('Invalid keyword type',type(k))
+                
 
+            
     def __sub__(self,val):
         return self.image-val
 
