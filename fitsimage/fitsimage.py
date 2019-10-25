@@ -13,7 +13,10 @@ from scipy import ndimage
 class FITSImage(WCS):
     def __init__(self,*args):
         n=len(args)
-        if n==2:
+        if n==1:
+            if isinstance(args[0],FITSImage):
+                self.loadData(args[0].image,args[0].header)
+        elif n==2:
             if isinstance(args[0],str):
                 self.loadFile(*args)
             elif isinstance(args[0],fits.hdu.hdulist.HDUList):
@@ -22,7 +25,7 @@ class FITSImage(WCS):
                 self.loadData(*args)
             else:
                 raise NotImplementedError
-        else:
+            
             pass
             
 
@@ -197,12 +200,6 @@ class FITSImage(WCS):
         elif isinstance(k,tuple):
             self.image[k[0],k[1]]=v
 
-    #def __str__(self):
-    #    try:
-    #        return WCS.__str__()
-    #    except:
-    #        return "Empty FITSImage"
-
     def __sub__(self,val):
         return self.image-val
 
@@ -258,9 +255,8 @@ if __name__=='__main__':
         
     filename='/Users/rryan/icoi3immq_flt.fits'
     exten=1
-    img=FITSImage()
-
-    #img.read(filename,exten=exten)
+    img=FITSImage(filename,exten)
+    
     sub=img.extract(490,530,490,510)
     sub.writefits('sub.fits')
     binned=sub.rebin(3)
