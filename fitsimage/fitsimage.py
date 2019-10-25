@@ -1,6 +1,8 @@
 import numpy as np
 from astropy.wcs import WCS
 
+
+
 from astropy.io import fits
 from astropy import nddata
 from scipy import ndimage
@@ -9,19 +11,40 @@ from scipy import ndimage
 
 # https://docs.astropy.org/en/stable/nddata/index.html
 class FITSImage(WCS):
-    def __init__(self,image=None,header=None):
-        if image is not None and header is not None:
-            self.load(image,header)
+    def __init__(self,*args):
+        n=len(args)
+        if n==2:
+            if isinstance(args[0],str):
+                self.loadFile(*args)
+            elif isinstance(args[0],fits.hdu.hdulist.HDUList):
+                self.loadHDU(*args)
+            elif isinstance(args[0],np.ndarray):
+                self.loadData(*args)
+            else:
+                raise NotImplementedError
+        else:
+            pass
+            
 
-    def read(self,filename,exten=1):
+    
+    #def __init__(self,image=None,header=None):
+    #    if image is not None and header is not None:
+    #        self.loadData(image,header)
+
+    def loadFile(self,filename,exten):
         ''' read a fits file by exten '''
         with fits.open(filename) as hdul:
-            image=hdul[exten].data
-            header=hdul[exten].header
-        self.load(image,header)
+            self.loadHDU(hdul,exten=exten)
+            #image=hdul[exten].data
+            #header=hdul[exten].header
+        #self.load(image,header)
         
-    
-    def load(self,image,header):
+    def loadHDU(self,hdul,exten):
+        image=hdul[exten].data
+        header=hdul[exten].header
+        self.loadData(image,header)
+        
+    def loadData(self,image,header):
         ''' load the data into the object '''
         self.image=image
         self.header=header
@@ -34,6 +57,8 @@ class FITSImage(WCS):
 
     def extract(self,x0,x1,y0,y1,**kwargs):
         ''' extract a sub array.  equivalent to hextract '''
+
+        setLTV=lambda k,v: hdr[k]-v if k in hdr else -v
         
         # use astropy to cut
         shape=(y1-y0+1,x1-x0+1)
@@ -46,8 +71,15 @@ class FITSImage(WCS):
         hdr['NAXIS2']=img.shape[0]
         hdr['CRPIX1']-=x0
         hdr['CRPIX2']-=y0
-        hdr['LTV1']-=x0
-        hdr['LTV2']-=y0
+
+        hdr['LTV1']=setLTV('LTV1',x0)
+        hdr['LTV2']=setLTV('LTV2',y0)
+        
+
+        #hdr['LTV2']=setLTV('LTV2',y0)
+
+        #hdr['LTV1']=-x0
+        #hdr['LTV2']-=y0
 
         
         # update the history
@@ -165,11 +197,48 @@ class FITSImage(WCS):
         elif isinstance(k,tuple):
             self.image[k[0],k[1]]=v
 
-            
+    #def __str__(self):
+    #    try:
+    #        return WCS.__str__()
+    #    except:
+    #        return "Empty FITSImage"
+
+    def __sub__(self,val):
+        return self.image-val
+
+    def __rsub__(self,val):
+        return val-self.image
+
+    def __eq__(self,val):
+        return self.image == val
+
+    def __ne__(self,val):
+        return self.image != val
+
+    def __gt__(self,val):
+        return self.image > val
+
+    def __ge__(self,val):
+        return self.image >= val
+        
+    def __lt__(self,val):
+        return self.image < val
+    
+    def __le__(self,val):
+        return self.image <= val
+
+
+    def __contains__(self,k):
+        return k in self.header
+    
     @property
     def shape(self):
         return self.image.shape
 
+    @property
+    def dtype(self):
+        return self.image.dtype
+    
 
     # convenience functions to avoid that dumb 0
     def xy2ad(self,x,y):
@@ -190,7 +259,8 @@ if __name__=='__main__':
     filename='/Users/rryan/icoi3immq_flt.fits'
     exten=1
     img=FITSImage()
-    img.read(filename,exten=exten)
+
+    #img.read(filename,exten=exten)
     sub=img.extract(490,530,490,510)
     sub.writefits('sub.fits')
     binned=sub.rebin(3)
