@@ -25,7 +25,7 @@ class FITSImage(WCS):
                 self.loadData(*args)
             else:
                 raise NotImplementedError
-            
+        else:
             pass
             
 
@@ -152,7 +152,7 @@ class FITSImage(WCS):
                 
         
         # update the history
-        history='Bloack averaged image with factor {}'.format(binfact)
+        history='Block averaged image with factor {}'.format(binfact)
         hdr.add_history(history)
 
 
