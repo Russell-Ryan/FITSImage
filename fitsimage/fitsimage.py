@@ -233,7 +233,6 @@ class FITSImage(WCS):
     def __le__(self,val):
         return self.image <= val
 
-
     def __contains__(self,k):
         return k in self.header
     
