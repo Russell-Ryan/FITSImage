@@ -29,6 +29,13 @@ class FITSImage(WCS):
             pass
             
 
+    def select(self,x,y):
+        new=FITSImage(self)
+        new.image=np.zeros_like(self.image)
+        new.image[y,x]=self.image[y,x]
+        return new
+        
+        
     
     #def __init__(self,image=None,header=None):
     #    if image is not None and header is not None:
@@ -37,7 +44,7 @@ class FITSImage(WCS):
     def loadFile(self,filename,exten):
         ''' read a fits file by exten '''
         with fits.open(filename) as hdul:
-            self.loadHDU(hdul,exten=exten)
+            self.loadHDU(hdul,exten)
             #image=hdul[exten].data
             #header=hdul[exten].header
         #self.load(image,header)
@@ -184,6 +191,10 @@ class FITSImage(WCS):
         return fits.ImageHDU(data=self.image,header=self.header,**kwargs)
     
 
+    def get(self,k,default):
+        if isinstance(k,str):
+            return self.header.get(k,default)
+        
     
     def __getitem__(self,k):
         if isinstance(k,str):
@@ -264,16 +275,24 @@ if __name__=='__main__':
     filename='/Users/rryan/icoi3immq_flt.fits'
     exten=1
     img=FITSImage(filename,exten)
+
+    x=np.array([500,501,502])
+    new=img.select(x,x)
+    new.writefits('one.fits')
+    #print(np.amax(new.image),np.amax(img.image))
     
     sub=img.extract(490,530,490,510)
     sub.writefits('sub.fits')
-    binned=sub.rebin(3)
 
-    binned.writefits('python.fits')
+
+
+    #binned=sub.rebin(3)
+    #
+    #binned.writefits('python.fits')
     
     
-    x=np.array([400,500])
-    y=np.array([400,500])
+    #x=np.array([400,500])
+    #y=np.array([400,500])
     #x=np.array([500])
     #y=np.array([500])
     #x=500
