@@ -1,8 +1,6 @@
 import numpy as np
 from astropy.wcs import WCS
-
-
-
+import re
 from astropy.io import fits
 from astropy import nddata
 from scipy import ndimage
@@ -11,7 +9,12 @@ from scipy import ndimage
 
 # https://docs.astropy.org/en/stable/nddata/index.html
 class FITSImage(WCS):
+
+    SIP = ('A','B','AP','BP')
+    
+    
     def __init__(self,*args):
+
         n=len(args)
         if n==1:
             if isinstance(args[0],FITSImage):
@@ -58,7 +61,63 @@ class FITSImage(WCS):
         ''' load the data into the object '''
         self.image=image
         self.header=header
+
+
+        
+        if self.has_sip():
+            if self.header['CTYPE1'][8:]!=self.header['CTYPE2'][8:]:
+                raise NotImplementedError("Invalid fits header in FITSImage")
+            if self.header['CTYPE1'][8:]!='-SIP':
+                # if here, then there are SIP coefs but the CTYPE*
+                # are not labeled as -SIP, and so astropy will complain.
+                # Personally, I think this is a *MAJOR* error on astropy's
+                # part, it is completely natural to log the SIP coefs in
+                # a rectified image so one does not lose this information
+                # for posterity.  I will work around this, by relabeling
+                # the coefs so astropy's error is not raised.
+                coef=re.compile('(A|B|AP|BP)_[0-9]_[0-9]')
+                order=re.compile('(A|B|AP|BP)_ORDER')
+                deletes=[]
+                letters={'A':'C','B':'D','AP':'CP','BP':'DP'}
+                for k,v in self.header.items():
+                    match= coef.match(k)
+
+                    if match:
+                        let,i,j=match[0].split('_')
+                        if let in letters.keys():
+                            tokens=(letters[let],i,j)
+                            self.header['{}_{}_{}'.format(*tokens)]=v
+                            deletes.append(k)
+
+
+                    match=order.match(k)
+                    if match:
+                        let=match[0].split('_')[0]
+                        if let in letters.keys():
+                            self.header['{}_ORDER'.format(letters[let])]=v
+                            deletes.append(k)
+                for delete in deletes:
+                    del self.header[delete]
+                              
+
+
+
+        
         WCS.__init__(self,self.header)
+
+
+    def has_sip(self):
+        keys=list(self.header.keys())        
+        for func in self.SIP:
+            # build a regex search
+            r = re.compile("{}_[0-9]_[0-9]".format(func))
+            
+            # has a given order
+            if '{}_ORDER'.format(func) in keys and any(filter(r.match,keys)):
+                return True
+        return False
+            
+
 
     def astrom(self):
         pass
@@ -186,7 +245,7 @@ class FITSImage(WCS):
         hdul.writeto(filename,overwrite=overwrite)
         hdul.close()
         
-    
+     
     def ImageHDU(self,**kwargs):
         return fits.ImageHDU(data=self.image,header=self.header,**kwargs)
     
