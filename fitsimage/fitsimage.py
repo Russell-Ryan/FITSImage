@@ -19,6 +19,10 @@ class FITSImage(WCS):
         if n==1:
             if isinstance(args[0],FITSImage):
                 self.loadData(args[0].image,args[0].header)
+            elif isinstance(args[0],str):
+                with fits.open(args[0]) as hdul:
+                    self.loadData(hdul[0].data,hdul[0].header)
+                    
         elif n==2:
             if isinstance(args[0],str):
                 self.loadFile(*args)
@@ -39,6 +43,9 @@ class FITSImage(WCS):
         return new
         
         
+
+
+
     
     #def __init__(self,image=None,header=None):
     #    if image is not None and header is not None:
@@ -123,6 +130,10 @@ class FITSImage(WCS):
         pass
     #https://reproject.readthedocs.io/en/stable/api/reproject.reproject_interp.html#reproject.reproject_interp
 
+    def erode(self,s):
+        pass
+
+    
 
     def extract(self,x0,x1,y0,y1,**kwargs):
         ''' extract a sub array.  equivalent to hextract '''
